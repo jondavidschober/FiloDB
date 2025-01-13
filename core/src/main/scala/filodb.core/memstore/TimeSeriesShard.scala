@@ -1428,7 +1428,7 @@ class TimeSeriesShard(val ref: DatasetRef,
   }
 
   private def commitCheckpoint(ref: DatasetRef, shardNum: Int, flushGroup: FlushGroup): Future[Response] = {
-    if (storeConfig.flushWriteEnabled) {
+    if (!storeConfig.flushWriteEnabled) {
       logger.warn("Flush Writes are disabled. Skipping Flush")
       return Future.successful(NotApplied)
     }
