@@ -1394,6 +1394,7 @@ class TimeSeriesShard(val ref: DatasetRef,
       .flatMap( _=> writeDirtyPartKeys(flushGroup))
 
     /* Step 6: Checkpoint after dirty part keys and chunks are flushed */
+
     val result = Future.sequence(Seq(writeChunksFuture, writeDirtyPartKeysFuture)).map {
       _.find(_.isInstanceOf[ErrorResponse]).getOrElse(Success)
     }.flatMap {
@@ -1427,6 +1428,9 @@ class TimeSeriesShard(val ref: DatasetRef,
   }
 
   private def commitCheckpoint(ref: DatasetRef, shardNum: Int, flushGroup: FlushGroup): Future[Response] = {
+    if (storeConfig.flushWriteEnabled) {
+      return Future.successful(NotApplied)
+    }
     assertThreadName(IOSchedName)
     // negative checkpoints are refused by Kafka, and also offsets should be positive
     if (flushGroup.flushWatermark > 0) {
