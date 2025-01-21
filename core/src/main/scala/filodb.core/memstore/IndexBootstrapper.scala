@@ -80,6 +80,7 @@ class RawIndexBootstrapper(colStore: ColumnStore) {
    * @param shardNum shard number
    * @param ref dataset ref
    * @param assignPartId the function to invoke to get the partitionId to be used to populate the index record
+   * @param ttlMs how far to look back when filtering the index
    * @return number of updated records
    */
   def bootstrapIndexShortTerm(index: PartKeyIndexRaw,
