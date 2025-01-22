@@ -108,6 +108,31 @@ sealed class PartitionKeysTable(val dataset: DatasetRef,
     } yield pk
   }
 
+  def scanPartKeysByEndTime(
+    tokens: Seq[(String, String)],
+    scanParallelism: Int,
+    startTime: Long,
+    endTime: Long
+    ): Observable[PartKeyRecord] = {
+    val res: Observable[Iterator[PartKeyRecord]] = Observable.fromIterable(tokens)
+      .mapParallelUnordered(scanParallelism) { range =>
+        val fut = session.executeAsync(
+          scanCqlForEndTime.bind(
+            range._1.toLong: JLong,
+            range._2.toLong: JLong,
+            startTime: java.lang.Long,
+            endTime: java.lang.Long
+          ))
+          .toIterator.handleErrors
+          .map { rowIt => rowIt.map(r => PartitionKeysTable.rowToPartKeyRecord(r, shard)) }
+        Task.fromFuture(fut)
+      }
+    for {
+      pkRecs <- res
+      pk <- Observable.fromIteratorUnsafe(pkRecs)
+    } yield pk
+  }
+
   /**
    * Method used by data repair jobs.
    * Return PartitionKey rows where timeSeries startTime falls within the specified repair start/end window.

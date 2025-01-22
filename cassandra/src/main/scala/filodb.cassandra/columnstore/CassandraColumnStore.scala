@@ -526,6 +526,21 @@ extends ColumnStore with CassandraChunkSource with StrictLogging {
       }
     }
   }
+  def scanPartKeysByEndTime(ref: DatasetRef, shard: Int, startTime: Long, endTime: Long): Observable[PartKeyRecord] = {
+
+    if (partKeysV2TableEnabled) {
+      val table = getOrCreatePartitionKeysV2Table(ref)
+      table.scanPartKeysByEndTime(shard, indexScanParallelismPerShard, pkv2NumBuckets)
+    } else {
+      val table = getOrCreatePartitionKeysTable(ref, shard)
+      Observable.fromIterable(getScanSplits(ref)).flatMap { tokenRange =>
+        table.scanPartKeysByEndTime(
+          tokenRange.asInstanceOf[CassandraTokenRangeSplit].tokens,
+          indexScanParallelismPerShard
+        )
+      }
+    }
+  }
 
   // returns the persisted partKey record, or default partKey record (argument) if there is no persisted value.
   def getPartKeyRecordOrDefault(ref: DatasetRef,

@@ -94,8 +94,7 @@ class RawIndexBootstrapper(colStore: ColumnStore) {
       .withTag("shard", shardNum)
     val start = System.currentTimeMillis()
     val startTtl = System.currentTimeMillis() - ttlMs
-    colStore.scanPartKeys(ref, shardNum)
-      .filter(_.endTime > startTtl)
+    colStore.scanPartKeysByEndTime(ref, shardNum, startTtl, start)
       .map { pk =>
         val partId = assignPartId(pk)
         // -1 is returned if we skiped the part key for any reason, such as

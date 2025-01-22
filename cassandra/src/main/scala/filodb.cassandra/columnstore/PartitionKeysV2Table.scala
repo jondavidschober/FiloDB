@@ -117,6 +117,35 @@ sealed class PartitionKeysV2Table(val dataset: DatasetRef,
     } yield pk
   }
 
+  def scanPartKeysByEndTime(
+    shard: Int,
+    scanParallelism: Int,
+    numBuckets: Int,
+    startTime: Long,
+    endTime: Long
+  ): Observable[PartKeyRecord] = {
+
+    /*
+    TODO If this is slow, then another option to evaluate is to do token scan with shard filter.
+    SELECT partKey, startTime, endTime, shard FROM $tableString " +
+      s"WHERE TOKEN(shard, bucket) >= ? AND TOKEN(shard, bucket) < ? AND " +
+      s"shard = ? ALLOW FILTERING")
+     */
+
+    val res: Observable[Iterator[PartKeyRecord]] = Observable.fromIterable(0 until numBuckets)
+      .mapParallelUnordered(scanParallelism) { bucket =>
+        val fut = session.executeAsync(
+          scanCqlForEndTime.bind(shard: JInt, bucket: JInt, startTime: java.lang.Long, endTime: java.lang.Long))
+          .toIterator.handleErrors
+          .map { rowIt => rowIt.map(PartitionKeysV2Table.rowToPartKeyRecord) }
+        Task.fromFuture(fut)
+      }
+    for {
+      pkRecs <- res
+      pk <- Observable.fromIteratorUnsafe(pkRecs)
+    } yield pk
+  }
+
   /**
    * Method used by data repair jobs.
    * Return PartitionKey rows where timeSeries startTime falls within the specified repair start/end window.
