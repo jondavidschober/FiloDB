@@ -530,13 +530,15 @@ extends ColumnStore with CassandraChunkSource with StrictLogging {
 
     if (partKeysV2TableEnabled) {
       val table = getOrCreatePartitionKeysV2Table(ref)
-      table.scanPartKeysByEndTime(shard, indexScanParallelismPerShard, pkv2NumBuckets)
+      table.scanPartKeysByEndTime(shard, indexScanParallelismPerShard, pkv2NumBuckets, startTime, endTime)
     } else {
       val table = getOrCreatePartitionKeysTable(ref, shard)
       Observable.fromIterable(getScanSplits(ref)).flatMap { tokenRange =>
         table.scanPartKeysByEndTime(
           tokenRange.asInstanceOf[CassandraTokenRangeSplit].tokens,
-          indexScanParallelismPerShard
+          indexScanParallelismPerShard,
+          startTime,
+          endTime
         )
       }
     }

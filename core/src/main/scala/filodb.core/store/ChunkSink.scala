@@ -171,6 +171,8 @@ class NullColumnStore(implicit sched: Scheduler) extends ColumnStore with Strict
 
   override def scanPartKeys(ref: DatasetRef, shard: Int): Observable[PartKeyRecord] = Observable.empty
 
+  override def scanPartKeysByEndTime(ref: DatasetRef, shard: Int, startTime: Long, endTime: Long): Observable[PartKeyRecord] = Observable.empty
+
   override def writePartKeys(ref: DatasetRef, shard: Int,
                              partKeys: Observable[PartKeyRecord], diskTTLSeconds: Long,
                              updateHour: Long, writeToPkUTTable: Boolean = true): Future[Response] = {
