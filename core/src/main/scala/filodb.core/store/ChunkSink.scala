@@ -47,6 +47,11 @@ trait ChunkSink {
   def scanPartKeys(ref: DatasetRef, shard: Int): Observable[PartKeyRecord]
 
   /**
+    * Used to bootstrap lucene index with partition keys for a shard
+    */
+  def scanPartKeysByEndTime(ref: DatasetRef, shard: Int, startTime: Long, endTime: Long): Observable[PartKeyRecord]
+
+  /**
     * Used by downsample shard to do periodic pulls of new partition keys
     * into lucene index
     *
